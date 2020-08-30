@@ -1,0 +1,12 @@
+function dealOutHands()
+    unoDeck = getObjectFromGUID(Global.getVar("UNO_DECK_GUID"))
+    unoDeck.shuffle()
+    unoDeck.deal(7)
+end
+
+function setUpGame()
+    unoDeck = getObjectFromGUID(Global.getVar("UNO_DECK_GUID"))
+    unoDeck.reset()
+    -- Wait a sec to avoid card collisions
+    Wait.time(dealOutHands, 1)
+end
