@@ -1,0 +1,55 @@
+BUTTON_PRESS_SOUND_EFFECT=0
+CARD_LAUNCH_SOUND_EFFECT=1
+BUTTON_COUNT=0
+
+
+function onload()
+
+    lockout = false
+end
+
+function processButtonClick(player, value, id)
+    self.AssetBundle.playTriggerEffect(BUTTON_PRESS_SOUND_EFFECT)
+    --wait a few frames so the button sound can finish
+    Wait.frames(function()carryOnWithButtonClick(player,value,id) end, 15)
+end
+
+function carryOnWithButtonClick(player, value, id)
+    cardsOut = false
+    fifthButtonCurse = false
+    testForLaunch = math.random()
+    -- decide if this button press will deal cards
+    if testForLaunch < 0.33  then
+        cardsOut = true
+    end
+    -- the card launcher will always deal cards if the button deal cards if the
+    -- launcher has failed to to do 4 times in a row
+    if BUTTON_COUNT >= 5 then
+        cardsOut = true
+        fifthButtonCurse = true
+    end
+
+    if cardsOut == false then
+        print ("no cards for " .. player.steam_name)
+    else
+        cardsAmt = math.random(1,3)
+        cardsAmt = cardsAmt + math.random(0,3)
+        cardsAmt = cardsAmt + math.random(0,3)
+        -- possibly extra cards if it's the max 5th button hahahahaha!
+        if (fifthButtonCurse) then
+            cardsAmt = cardsAmt + math.random(0,5)
+        end
+
+        print(cardsAmt .. " cards to " .. player.steam_name)
+        deckOcards = getObjectFromGUID(Global.getVar("UNO_DECK_GUID"))
+        deckOcards.deal(cardsAmt,player.color)
+
+        self.AssetBundle.playTriggerEffect(CARD_LAUNCH_SOUND_EFFECT)
+    end
+
+    if (cardsOut) then
+        BUTTON_COUNT = 1
+    else
+        BUTTON_COUNT = BUTTON_COUNT + 1
+    end
+end

@@ -1,13 +1,53 @@
 --[[ Lua code. See documentation: https://api.tabletopsimulator.com/ --]]
-UNO_DECK_GUID="68685c"
+UNO_DECK_GUID="f73048"
+CARD_LAUNCHER_GUID="952003"
+UNO_BUTTON_ASSET="7e8b7d"
+DISCARD_ZONE="63ce14"
 
-
---[[ The onLoad event is called after the game save finishes loading. --]]
 function onLoad()
-    --[[ print('onLoad!') --]]
+    -- Must set the random seed or it won't work correctly later
+    math.randomseed(os.time())
 end
 
---[[ The onUpdate event is called once per frame. --]]
-function onUpdate()
-    --[[ print('onUpdate loop!') --]]
+
+-- Rotates the card launcher and discard pile by yValue
+function rotateTheThings(yValue)
+    local launcher = getObjectFromGUID(Global.getVar("CARD_LAUNCHER_GUID"))
+
+    local launcherHasStoppedMoving = function()
+        if (launcher.isSmoothMoving()) then
+            return false
+        else
+            return true
+        end
+    end
+    local unattachCards = function() launcher.removeAttachments() end
+    rot = launcher.getRotation()
+    newy = rot.y + yValue
+    collide=true
+    fast=false
+    local zoneObjects = getObjectFromGUID(DISCARD_ZONE).getObjects()
+    for i, deck in ipairs(zoneObjects) do
+        globalDeck = getObjectFromGUID(deck.getGUID())
+        if (globalDeck.name == "Card" or globalDeck.name == "Deck") then
+            launcher.addAttachment(globalDeck)
+        end
+    end
+    launcher.setRotationSmooth({x=0, y=newy, z=0}, fast, collide)
+    Wait.condition(unattachCards, launcherHasStoppedMoving, 3)
+end
+
+
+
+-- Called by left arrow buttons
+-- Rotates the card launcher to next left player
+function rotateLauncherLeft()
+    rotateTheThings(45)
+    --Player.getAvailableColors()
+end
+
+-- Called by right arrow buttons
+-- Rotates the card launcher to the next right player
+function rotateLauncherRight()
+    rotateTheThings(-45)
 end

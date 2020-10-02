@@ -1,0 +1,1 @@
+<Button onClick="Global/rotateLauncherRight" icon="rightArrow" iconWidth="100" width="100" height="100" position="0 0 -30" fontSize="64"></Button>

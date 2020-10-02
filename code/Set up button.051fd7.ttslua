@@ -1,12 +1,33 @@
 function dealOutHands()
-    unoDeck = getObjectFromGUID(Global.getVar("UNO_DECK_GUID"))
+    -- Shuffle deck and deal 7 to every active player
+    local unoDeck = getObjectFromGUID(Global.getVar("UNO_DECK_GUID"))
     unoDeck.shuffle()
     unoDeck.deal(7)
+
+    -- Get the position for discard pile start
+    local cardLauncher = getObjectFromGUID(Global.getVar("CARD_LAUNCHER_GUID"))
+    local discardPoint = cardLauncher.getSnapPoints()
+
+    local snapPos = cardLauncher.positionToWorld(discardPoint[1].position)
+    local snapRot = cardLauncher.getRotation()
+    snapRot.y = snapRot.y -90
+
+    local takeParams =
+    {
+        position = {x=snapPos.x, y=5, z=snapPos.z},
+        rotation = snapRot,
+        flip = true
+    }
+    unoDeck.takeObject(takeParams)
 end
 
 function setUpGame()
+    -- Call all cards back to deck
     unoDeck = getObjectFromGUID(Global.getVar("UNO_DECK_GUID"))
     unoDeck.reset()
     -- Wait a sec to avoid card collisions
     Wait.time(dealOutHands, 1)
+
+
+
 end

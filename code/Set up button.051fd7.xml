@@ -1,1 +1,1 @@
-<Button onClick="setUpGame" width="400" height="150" position="0 0 -30" fontSize="64"> Set up game</Button>
+<Button onClick="setUpGame" width="400" height="150" position="0 0 -30" fontSize="64">Deal cards</Button>
