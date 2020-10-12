@@ -1,6 +1,34 @@
+-- All this junk is here to choose the starting cardDescription
+-- it's awkward when the first card is a wildcard or special therefore
+-- this goes through the top cards until a normal number card if found
+function findStartingCardGUID()
+    seekingStartingCard = true
+    starterGuid =""
+    while seekingStartingCard do
+        topCards = unoDeck.getObjects()
+        for _,c in pairs(topCards ) do
+            cardDescription = c["description"]
+            containsNumber=false
+            doesNotContainHit=true
+            numPos = string.match(cardDescription, '[1-9]')
+            hitPos = string.match(cardDescription, 'hit')
+            if (numPos) then containsNumber = true end
+            if (hitPos) then doesNotContainHit = false end
+            -- If the card description contains a number but not the word "hit"
+            -- e.g. "Yellow 2hit" then it can a good starting card! so stop
+            -- searching and return that card GUID
+            if (containsNumber and doesNotContainHit) then
+                starterGuid = c["guid"]
+                seekingStartingCard=false
+                break;
+            end
+        end
+    end
+    return starterGuid
+end
+
 function dealOutHands()
-    -- Shuffle deck and deal 7 to every active player
-    local unoDeck = getObjectFromGUID(Global.getVar("UNO_DECK_GUID"))
+    -- Shuffle and deal 7 to every seated player
     unoDeck.shuffle()
     unoDeck.deal(7)
 
@@ -12,22 +40,35 @@ function dealOutHands()
     local snapRot = cardLauncher.getRotation()
     snapRot.y = snapRot.y -90
 
+    starterCard = findStartingCardGUID()
     local takeParams =
     {
         position = {x=snapPos.x, y=5, z=snapPos.z},
         rotation = snapRot,
-        flip = true
+        flip = true,
+        guid = starterCard
     }
     unoDeck.takeObject(takeParams)
 end
 
 function setUpGame()
     -- Call all cards back to deck
-    unoDeck = getObjectFromGUID(Global.getVar("UNO_DECK_GUID"))
+    unoDeck = Global.call("getDrawDeckObject")
     unoDeck.reset()
-    -- Wait a sec to avoid card collisions
+
+    -- If players have orphaned cards in their hands then the above command
+    -- will not effect them and they should be destroyed
+    allPlayers = Player.getAvailableColors()
+    for _, colour in ipairs(allPlayers) do
+        playerCards = Player[colour].getHandObjects()
+        for _, card in ipairs(playerCards) do
+            -- KILL THE ORPHANS HAHAHA
+            destroyObject(card)
+        end --what have I done...
+    end
+
+
+    -- Deal out 7 cards to each seated player
+    -- But wait a sec to avoid card collisions from the reset
     Wait.time(dealOutHands, 1)
-
-
-
 end

@@ -1,53 +1,116 @@
 --[[ Lua code. See documentation: https://api.tabletopsimulator.com/ --]]
-UNO_DECK_GUID="f73048"
 CARD_LAUNCHER_GUID="952003"
 UNO_BUTTON_ASSET="7e8b7d"
 DISCARD_ZONE="63ce14"
+DRAW_ZONE="439510"
 
 function onLoad()
     -- Must set the random seed or it won't work correctly later
     math.randomseed(os.time())
 end
 
+function getDrawDeckObject()
+    local zoneObjects = getObjectFromGUID(DRAW_ZONE).getObjects()
+    for _, obj in ipairs(zoneObjects) do
+        if (obj.name == "Card" or obj.name == "Deck" or obj.name == "DeckCustom") then
+            return obj
+        end
+    end
+end
 
 -- Rotates the card launcher and discard pile by yValue
 function rotateTheThings(yValue)
     local launcher = getObjectFromGUID(Global.getVar("CARD_LAUNCHER_GUID"))
-
-    local launcherHasStoppedMoving = function()
-        if (launcher.isSmoothMoving()) then
-            return false
-        else
-            return true
-        end
+    --If the launcher is already moving then ignore the button click.
+    if launcher.isSmoothMoving() then
+        return
     end
+
+    local launcherHasStoppedMoving = function() return not launcher.isSmoothMoving() end
     local unattachCards = function() launcher.removeAttachments() end
-    rot = launcher.getRotation()
-    newy = rot.y + yValue
-    collide=true
-    fast=false
+    local rot = launcher.getRotation()
+    local newy = rot.y + yValue
+    local collide=true
+    local fast=false
     local zoneObjects = getObjectFromGUID(DISCARD_ZONE).getObjects()
-    for i, deck in ipairs(zoneObjects) do
-        globalDeck = getObjectFromGUID(deck.getGUID())
-        if (globalDeck.name == "Card" or globalDeck.name == "Deck") then
-            launcher.addAttachment(globalDeck)
+    for _, obj in ipairs(zoneObjects) do
+        if (obj.name == "Card" or obj.name == "Deck" or obj.name == "DeckCustom") then
+            launcher.addAttachment(obj)
         end
     end
     launcher.setRotationSmooth({x=0, y=newy, z=0}, fast, collide)
     Wait.condition(unattachCards, launcherHasStoppedMoving, 3)
 end
 
+function getColourInFrontOfLauncher(launcherRot)
+    if launcherRot < 40 then
+        return "Orange"
+    elseif launcherRot < 85 then
+        return "Yellow"
+    elseif launcherRot < 130 then
+        return "Green"
+    elseif launcherRot < 175 then
+        return "Blue"
+    elseif launcherRot < 220 then
+        return "Purple"
+    elseif launcherRot < 265 then
+        return "Pink"
+    elseif launcherRot < 310 then
+        return "White"
+    else
+        return "Red"
+    end
+end
 
+function getLauncherRotation(closewise)
+    local launcher = getObjectFromGUID(Global.getVar("CARD_LAUNCHER_GUID"))
+    local launcherRot = launcher.getRotation().y
+
+    if closewise then
+        launcherRot = launcherRot + 45
+        if launcherRot > 316 then launcherRot = 0 end
+    else
+        launcherRot = launcherRot - 45
+        if launcherRot < 0 then launcherRot = 315 end
+    end
+
+    local nextSeatedPlayerFound = false
+    local playersChecked=0
+    local maxPlayers=8
+
+    while not nextSeatedPlayerFound and playersChecked < maxPlayers do
+        playersChecked = playersChecked + 1
+
+        if Player[getColourInFrontOfLauncher(launcherRot)].seated then
+            nextSeatedPlayerFound = true
+        else
+            if closewise then
+                launcherRot = launcherRot + 45
+                if launcherRot > 316 then launcherRot = 0 end
+            else
+                launcherRot = launcherRot - 45
+                if launcherRot < 0 then launcherRot = 315 end
+            end
+        end
+    end
+
+    if (closewise) then
+        return 45 * playersChecked
+    else
+        return -45 * playersChecked
+    end
+end
 
 -- Called by left arrow buttons
 -- Rotates the card launcher to next left player
 function rotateLauncherLeft()
-    rotateTheThings(45)
-    --Player.getAvailableColors()
+    rot = getLauncherRotation(true);
+    rotateTheThings(rot)
 end
 
 -- Called by right arrow buttons
 -- Rotates the card launcher to the next right player
 function rotateLauncherRight()
-    rotateTheThings(-45)
+    rot = getLauncherRotation(false);
+    rotateTheThings(rot)
 end

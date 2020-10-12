@@ -1,6 +1,6 @@
 BUTTON_PRESS_SOUND_EFFECT=0
 CARD_LAUNCH_SOUND_EFFECT=1
-BUTTON_COUNT=0
+BUTTON_COUNT=1
 
 
 function onload()
@@ -12,6 +12,14 @@ function processButtonClick(player, value, id)
     self.AssetBundle.playTriggerEffect(BUTTON_PRESS_SOUND_EFFECT)
     --wait a few frames so the button sound can finish
     Wait.frames(function()carryOnWithButtonClick(player,value,id) end, 15)
+end
+
+function checkRemainingCards()
+    local drawDeck = Global.call("getDrawDeckObject")
+    deckAmt = drawDeck.getQuantity()
+    if (deckAmt < 20) then
+        print ("only ".. deckAmt .. " cards left in draw deck, please replenish from discard pile.")
+    end
 end
 
 function carryOnWithButtonClick(player, value, id)
@@ -41,8 +49,8 @@ function carryOnWithButtonClick(player, value, id)
         end
 
         print(cardsAmt .. " cards to " .. player.steam_name)
-        deckOcards = getObjectFromGUID(Global.getVar("UNO_DECK_GUID"))
-        deckOcards.deal(cardsAmt,player.color)
+        local drawDeck = Global.call("getDrawDeckObject")
+        drawDeck.deal(cardsAmt,player.color)
 
         self.AssetBundle.playTriggerEffect(CARD_LAUNCH_SOUND_EFFECT)
     end
@@ -52,4 +60,6 @@ function carryOnWithButtonClick(player, value, id)
     else
         BUTTON_COUNT = BUTTON_COUNT + 1
     end
+
+    checkRemainingCards()
 end
