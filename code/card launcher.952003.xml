@@ -1,1 +1,1 @@
-<Button onClick="processButtonClick" width="200" height="100" color="#FFFF00" position="-200 0 75" rotation="0 10 270" fontSize="64">Uno</Button>
+<Button onClick="processButtonClick" width="200" height="100" color="#ffe269" position="-200 0 75" rotation="0 10 270" fontSize="64">UNO</Button>
