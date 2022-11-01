@@ -3,14 +3,92 @@ CARD_LAUNCHER_GUID="952003"
 UNO_BUTTON_ASSET="7e8b7d"
 DISCARD_ZONE="63ce14"
 DRAW_ZONE="439510"
+GAME_IS_IN_PROGRESS=false
 
 function onLoad()
     -- Must set the random seed or it won't work correctly later
     math.randomseed(os.time())
 end
 
+-- Returns the end-game score value of the given card
+function getCardValue(card)
+    local cardDescription = card.getDescription()
+    -- wild cards 50 pts
+    local wild = string.match(cardDescription, 'wild card')
+    local wildx = string.match(cardDescription, 'wild extreme hit')
+    if wild or wildx then
+        return 50
+    end
+    -- hit 4 40 pts
+    local wild4 = string.match(cardDescription, 'wild hit 4')
+    if wild4 then
+        return 40
+    end
+    -- discard all 30 points
+    local discardAll = string.match(cardDescription, 'discard all')
+    if discardAll then
+        return 30
+    end
+    -- skip, reverse and hit2 20 points
+    local reverse = string.match(cardDescription, 'reverse')
+    local skip = string.match(cardDescription, 'skip')
+    local hit2 = string.match(cardDescription, 'hit 2')
+    if reverse or skip or hit2 then
+        return 20
+    end
+    -- number cards use face value
+    local numValue = string.match(cardDescription, '[1-9]')
+    if numValue then
+        return numValue
+    end
+    -- hopefully we never reach this part of the function
+    print("Warning: card value not found for " .. cardDescription)
+    return 0
+end
+
+-- Returns the point values of all cards in player hands
+function getWinningPoints()
+    local points = 0
+    local allPlayers = Player.getAvailableColors()
+    for _, colour in ipairs(allPlayers) do
+        playerCards = Player[colour].getHandObjects()
+        for _, card in ipairs(playerCards) do
+            points = points + getCardValue(card)
+        end
+    end
+    return points
+end
+
+-- When a card is dropped, check for win state and print winning score
+function onObjectDrop(colourName, obj)
+    if not obj.name == "Card" or not GAME_IS_IN_PROGRESS then
+        return
+    end
+    playerCards = Player[colourName].getHandObjects()
+    atLeastOneCard = false
+    for _, card in ipairs(playerCards) do
+        atLeastOneCard = true
+    end
+    if not atLeastOneCard then
+        printToAll(Player[colourName].steam_name .. " wins the round!", {r=1,g=1,b=1})
+        printToAll("Points: " .. getWinningPoints(), {r=1,g=1,b=1})
+        GAME_IS_IN_PROGRESS=false
+    end
+end
+
+-- Finds and returns the draw deck
 function getDrawDeckObject()
     local zoneObjects = getObjectFromGUID(DRAW_ZONE).getObjects()
+    for _, obj in ipairs(zoneObjects) do
+        if (obj.name == "Card" or obj.name == "Deck" or obj.name == "DeckCustom") then
+            return obj
+        end
+    end
+end
+
+-- Finds and returns the discard eck
+function getDiscardDeckObject()
+    local zoneObjects = getObjectFromGUID(DISCARD_ZONE).getObjects()
     for _, obj in ipairs(zoneObjects) do
         if (obj.name == "Card" or obj.name == "Deck" or obj.name == "DeckCustom") then
             return obj
@@ -42,6 +120,7 @@ function rotateTheThings(yValue)
     Wait.condition(unattachCards, launcherHasStoppedMoving, 3)
 end
 
+-- Works out what colour the launcher object is pointed at
 function getColourInFrontOfLauncher(launcherRot)
     if launcherRot < 40 then
         return "Orange"
@@ -62,6 +141,8 @@ function getColourInFrontOfLauncher(launcherRot)
     end
 end
 
+-- Returns how much the card launcher should rotate in order to point at the
+-- next seated player in that direction
 function getLauncherRotation(closewise)
     local launcher = getObjectFromGUID(Global.getVar("CARD_LAUNCHER_GUID"))
     local launcherRot = launcher.getRotation().y

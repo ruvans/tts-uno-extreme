@@ -54,7 +54,12 @@ end
 function setUpGame()
     -- Call all cards back to deck
     unoDeck = Global.call("getDrawDeckObject")
-    unoDeck.reset()
+    if unoDeck then
+        unoDeck.reset()
+    else
+        print("Cannot find draw deck. Please move draw deck into the marked rectangle")
+        return
+    end
 
     -- If players have orphaned cards in their hands then the above command
     -- will not effect them and they should be destroyed
@@ -66,9 +71,15 @@ function setUpGame()
             destroyObject(card)
         end --what have I done...
     end
+    --same with the discarded orphans
+    discardDeck = Global.call("getDiscardDeckObject")
+    if discardDeck then
+        destroyObject(discardDeck)
+    end
 
 
     -- Deal out 7 cards to each seated player
     -- But wait a sec to avoid card collisions from the reset
     Wait.time(dealOutHands, 1)
+    Global.setVar("GAME_IS_IN_PROGRESS", true)
 end
